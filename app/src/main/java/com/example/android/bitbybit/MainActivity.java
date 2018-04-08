@@ -23,6 +23,8 @@ public class MainActivity extends AppCompatActivity {
     RunnerView mRunView;
     RelativeLayout rootView;
     int GCD;
+    int screenWidth;
+    int screenHeight;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,6 +37,8 @@ public class MainActivity extends AppCompatActivity {
         deviceDisplay.getRealMetrics(deviceDisplayMetrics);
         BigInteger screenW = new BigInteger(deviceDisplayMetrics.widthPixels+"");
         BigInteger screenH = new BigInteger(deviceDisplayMetrics.heightPixels+"");
+        screenWidth = screenW.intValue();
+        screenHeight = screenH.intValue();
         GCD = screenH.gcd(screenW).intValue();
         columnCount = screenW.intValue()/GCD;
 
@@ -72,6 +76,10 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    public int[] getDimensions(){
+        int[] dim = {screenWidth,screenHeight};
+        return dim;
+    }
 
 
 }

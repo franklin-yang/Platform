@@ -1,16 +1,11 @@
 package com.example.android.bitbybit;
 
 import android.content.Context;
-import android.content.res.TypedArray;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffColorFilter;
-import android.graphics.drawable.Drawable;
-import android.text.TextPaint;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
@@ -33,6 +28,10 @@ public class RunnerView extends View {
     Paint iconPaint = new Paint();
     private int backgroundUpdateSkipper = 0;
     private boolean advance;
+    Bitmap torch;
+    Bitmap bonfire;
+    Vector<Obstacle> obstacles;
+    private boolean end = false;
 
 
     public RunnerView(Context context) {
@@ -55,6 +54,8 @@ public class RunnerView extends View {
 
     public void loadBitmaps(){
         super.onFinishInflate();
+        torch = BitmapFactory.decodeResource(getResources(),R.drawable.torch);
+        bonfire = BitmapFactory.decodeResource(getResources(),R.drawable.fire);
         runner = BitmapFactory.decodeResource(getResources(),R.drawable.runner);
         theRunner = new Runner((getWidth()/10),(4*getHeight()/5), runner);
         setWillNotDraw(false);
@@ -90,6 +91,8 @@ public class RunnerView extends View {
             }
             icons.add(eachColumn);
         }
+        obstacles = new Vector<>();
+
     }
 
     @Override
@@ -105,10 +108,20 @@ public class RunnerView extends View {
                 theRunner.jump();
             }
         });
-
     }
 
     public void update(){
+        for(Obstacle o:obstacles){
+            if(theRunner.collisionCheck(o)){
+                end = true;
+                Intent endGame = new Intent(getContext(), GameOver.class);
+                getContext().startActivity(endGame);
+            }
+        }
+        if(picker.nextInt(200)==2){
+            spawnObstacle();
+        }
+
         if(backgroundUpdateSkipper != 0 && backgroundUpdateSkipper % 20 == 0) {
             advanceBackground();
             backgroundUpdateSkipper = 0;
@@ -116,7 +129,36 @@ public class RunnerView extends View {
         else
             backgroundUpdateSkipper++;
         theRunner.update();
+        for(Obstacle o:obstacles){
+            o.update();
+        }
         postInvalidate();
+    }
+
+    private void spawnObstacle() {
+        int pickObstacle = picker.nextInt(2);
+        Log.d("dfd",pickObstacle+"Dfd");
+        Obstacle toAdd = null;
+        deleteGoneObstacles();
+        int size = picker.nextInt(((MainActivity)getContext()).getDimensions()[1]/4);
+        int velocity = 3+picker.nextInt(15);
+        switch (pickObstacle){
+            case 0: toAdd = new Torch(((MainActivity)getContext()).getDimensions()[0],theRunner.getBottomY()-(size-getHeight()/10),torch);
+                    break;
+            case 1: toAdd = new Bonfire(((MainActivity)getContext()).getDimensions()[0],theRunner.getBottomY()-(size-getHeight()/10),bonfire);
+                    break;
+        }
+        toAdd.setSize(size);
+        toAdd.setxVelocity(-velocity);
+        obstacles.add(toAdd);
+    }
+
+    private void deleteGoneObstacles(){
+        if(obstacles.size() > 0 && obstacles.get(0).getxPosition() < 0){
+            obstacles.remove(0);
+            deleteGoneObstacles();
+        }
+        Log.d("DFd",obstacles.size()+"");
     }
 
     private void advanceBackground(){
@@ -133,9 +175,12 @@ public class RunnerView extends View {
         super.onDraw(canvas);
         for(int i = 0; i < icons.size(); i++){
             for(int j = 0; j < icons.get(i).length; j++){
-//                iconPaint.setARGB(picker.nextInt(256),picker.nextInt(256),picker.nextInt(256),picker.nextInt(256));
+                Log.d("index",j+"");
                 canvas.drawBitmap(icons.get(i)[j],i*iconSize,j*iconSize, iconPaint);
             }
+        }
+        for(Obstacle o: obstacles){
+            o.drawOnCanvas(canvas);
         }
         theRunner.drawOnCanvas(canvas);
 
